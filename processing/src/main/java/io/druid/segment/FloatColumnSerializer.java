@@ -19,8 +19,9 @@
 
 package io.druid.segment;
 
-import io.druid.segment.data.CompressedFloatsSupplierSerializer;
 import io.druid.segment.data.CompressedObjectStrategy;
+import io.druid.segment.data.CompressionFactory;
+import io.druid.segment.data.FloatSupplierSerializer;
 import io.druid.segment.data.IOPeon;
 
 import java.io.IOException;
@@ -32,38 +33,43 @@ public class FloatColumnSerializer implements GenericColumnSerializer
   public static FloatColumnSerializer create(
       IOPeon ioPeon,
       String filenameBase,
-      CompressedObjectStrategy.CompressionStrategy compression
+      CompressedObjectStrategy.CompressionStrategy compression,
+      CompressionFactory.FloatEncodingStrategy encoding
   )
   {
-    return new FloatColumnSerializer(ioPeon, filenameBase, IndexIO.BYTE_ORDER, compression);
+    return new FloatColumnSerializer(ioPeon, filenameBase, IndexIO.BYTE_ORDER, compression, encoding);
   }
 
   private final IOPeon ioPeon;
   private final String filenameBase;
   private final ByteOrder byteOrder;
   private final CompressedObjectStrategy.CompressionStrategy compression;
-  private CompressedFloatsSupplierSerializer writer;
+  CompressionFactory.FloatEncodingStrategy encoding;
+  private FloatSupplierSerializer writer;
 
   public FloatColumnSerializer(
       IOPeon ioPeon,
       String filenameBase,
       ByteOrder byteOrder,
-      CompressedObjectStrategy.CompressionStrategy compression
+      CompressedObjectStrategy.CompressionStrategy compression,
+      CompressionFactory.FloatEncodingStrategy encoding
   )
   {
     this.ioPeon = ioPeon;
     this.filenameBase = filenameBase;
     this.byteOrder = byteOrder;
     this.compression = compression;
+    this.encoding = encoding;
   }
 
   @Override
   public void open() throws IOException
   {
-    writer = CompressedFloatsSupplierSerializer.create(
+    writer = CompressionFactory.getFloatSerializer(
         ioPeon,
         String.format("%s.float_column", filenameBase),
         byteOrder,
+        encoding,
         compression
     );
     writer.open();

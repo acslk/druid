@@ -284,4 +284,146 @@ public class CompressionFactory
       throw new IAE("unknown encoding strategy : %s", encodingStrategy.toString());
     }
   }
+
+  public static final FloatEncodingStrategy DEFAULT_FLOAT_ENCODING_STRATEGY = FloatEncodingStrategy.FLOATS;
+
+  // encoding format for segments created prior to the introduction of encoding formats
+  public static final FloatEncodingFormat LEGACY_FLOAT_ENCODING_FORMAT = FloatEncodingFormat.FLOATS;
+
+  /*
+   * There is no header or version for Floats encoding for backward compatibility
+   */
+
+  public enum FloatEncodingStrategy
+  {
+    /**
+     * FLOATS strategy always encode the values using FLOATS format
+     */
+    FLOATS
+  }
+
+  public enum FloatEncodingFormat
+  {
+    FLOATS((byte) 0xFF) {
+      @Override
+      public FloatEncodingReader getReader(ByteBuffer buffer, ByteOrder order)
+      {
+        return new FloatsFloatEncodingReader(buffer, order);
+      }
+    };
+
+    final byte id;
+
+    FloatEncodingFormat(byte id)
+    {
+      this.id = id;
+    }
+
+    public byte getId()
+    {
+      return id;
+    }
+
+    static final Map<Byte, FloatEncodingFormat> idMap = Maps.newHashMap();
+
+    static {
+      for (FloatEncodingFormat format : FloatEncodingFormat.values()) {
+        idMap.put(format.getId(), format);
+      }
+    }
+
+    public abstract FloatEncodingReader getReader(ByteBuffer buffer, ByteOrder order);
+
+    public static FloatEncodingFormat forId(byte id)
+    {
+      return idMap.get(id);
+    }
+  }
+
+  /**
+   * This writer output encoded values to the given ByteBuffer or OutputStream. {@link #setBuffer(ByteBuffer)} or
+   * {@link #setOutputStream(OutputStream)} must be called before any value is written, and {@link #flush()} must
+   * be called before calling setBuffer or setOutputStream again to set another output.
+   */
+  public interface FloatEncodingWriter
+  {
+    /**
+     * Data will be written starting from current position of the buffer, and the position of the buffer will be
+     * updated as content is written.
+     */
+    void setBuffer(ByteBuffer buffer);
+
+    void setOutputStream(OutputStream output);
+
+    void write(float value) throws IOException;
+
+    /**
+     * Flush the unwritten content to the current output.
+     */
+    void flush() throws IOException;
+
+    /**
+     * Output the header values of the associating encoding format to the given outputStream. The header also include
+     * bytes for compression strategy and encoding format(optional) as described above in Compression Storage Format.
+     */
+    void putMeta(OutputStream metaOut, CompressedObjectStrategy.CompressionStrategy strategy) throws IOException;
+
+    /**
+     * Get the number of values that can be encoded into each block for the given block size in bytes
+     */
+    int getBlockSize(int bytesPerBlock);
+
+    /**
+     * Get the number of bytes required to encoding the given number of values
+     */
+    int getNumBytes(int values);
+  }
+
+  public interface FloatEncodingReader
+  {
+    void setBuffer(ByteBuffer buffer);
+
+    float read(int index);
+
+    int getNumBytes(int values);
+
+    FloatEncodingReader duplicate();
+  }
+
+  public static Supplier<IndexedFloats> getFloatSupplier(
+      int totalSize, int sizePer, ByteBuffer fromBuffer, ByteOrder order,
+      FloatEncodingFormat encodingFormat,
+      CompressedObjectStrategy.CompressionStrategy strategy
+  )
+  {
+    if (strategy == CompressedObjectStrategy.CompressionStrategy.NONE) {
+      return new EntireLayoutIndexedFloatSupplier(totalSize, encodingFormat.getReader(fromBuffer, order));
+    } else {
+      return new BlockLayoutIndexedFloatSupplier(totalSize, sizePer, fromBuffer, order,
+                                                 encodingFormat.getReader(fromBuffer, order), strategy
+      );
+    }
+  }
+
+  public static FloatSupplierSerializer getFloatSerializer(
+      IOPeon ioPeon, String filenameBase, ByteOrder order,
+      FloatEncodingStrategy encodingStrategy,
+      CompressedObjectStrategy.CompressionStrategy compressionStrategy
+  )
+  {
+    if (encodingStrategy == FloatEncodingStrategy.FLOATS){
+      if (compressionStrategy == CompressedObjectStrategy.CompressionStrategy.NONE) {
+        return new EntireLayoutFloatSupplierSerializer(
+            ioPeon, filenameBase, order, new FloatsFloatEncodingWriter(order)
+        );
+      } else{
+        return new BlockLayoutFloatSupplierSerializer(
+            ioPeon, filenameBase, order, new FloatsFloatEncodingWriter(order), compressionStrategy
+        );
+      }
+    } else {
+      throw new IAE("unknown encoding strategy : %s", encodingStrategy.toString());
+    }
+  }
+
 }

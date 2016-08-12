@@ -82,7 +82,7 @@ public class IndexMergerTest
   protected IndexMerger INDEX_MERGER;
   private final static IndexIO INDEX_IO = TestHelper.getTestIndexIO();
 
-  @Parameterized.Parameters(name = "{index}: useV9={0}, bitmap={1}, metric compression={2}, dimension compression={3}, long encoding={4}")
+  @Parameterized.Parameters(name = "{index}: useV9={0}, bitmap={1}, metric compression={2}, dimension compression={3}, long encoding={4}, float encoding={5}")
   public static Collection<Object[]> data()
   {
     return Collections2.transform(
@@ -98,7 +98,8 @@ public class IndexMergerTest
                 ),
                 EnumSet.allOf(CompressedObjectStrategy.CompressionStrategy.class),
                 ImmutableSet.copyOf(CompressedObjectStrategy.CompressionStrategy.noNoneValues()),
-                EnumSet.allOf(CompressionFactory.LongEncodingStrategy.class)
+                EnumSet.allOf(CompressionFactory.LongEncodingStrategy.class),
+                EnumSet.allOf(CompressionFactory.FloatEncodingStrategy.class)
             )
         ), new Function<List<?>, Object[]>()
         {
@@ -116,7 +117,8 @@ public class IndexMergerTest
       BitmapSerdeFactory bitmapSerdeFactory,
       CompressedObjectStrategy.CompressionStrategy compressionStrategy,
       CompressedObjectStrategy.CompressionStrategy dimCompressionStrategy,
-      CompressionFactory.LongEncodingStrategy longEncodingStrategy
+      CompressionFactory.LongEncodingStrategy longEncodingStrategy,
+      CompressionFactory.FloatEncodingStrategy floatEncodingStrategy
   )
   {
     if (bitmapSerdeFactory != null || compressionStrategy != null) {
@@ -124,7 +126,8 @@ public class IndexMergerTest
           bitmapSerdeFactory,
           dimCompressionStrategy.name().toLowerCase(),
           compressionStrategy.name().toLowerCase(),
-          longEncodingStrategy.name().toLowerCase()
+          longEncodingStrategy.name().toLowerCase(),
+          floatEncodingStrategy.name().toLowerCase()
       );
     } else {
       return new IndexSpec();
@@ -140,10 +143,17 @@ public class IndexMergerTest
       BitmapSerdeFactory bitmapSerdeFactory,
       CompressedObjectStrategy.CompressionStrategy compressionStrategy,
       CompressedObjectStrategy.CompressionStrategy dimCompressionStrategy,
-      CompressionFactory.LongEncodingStrategy longEncodingStrategy
+      CompressionFactory.LongEncodingStrategy longEncodingStrategy,
+      CompressionFactory.FloatEncodingStrategy floatEncodingStrategy
   )
   {
-    this.indexSpec = makeIndexSpec(bitmapSerdeFactory, compressionStrategy, dimCompressionStrategy, longEncodingStrategy);
+    this.indexSpec = makeIndexSpec(
+        bitmapSerdeFactory,
+        compressionStrategy,
+        dimCompressionStrategy,
+        longEncodingStrategy,
+        floatEncodingStrategy
+    );
     if (useV9) {
       INDEX_MERGER = TestHelper.getTestIndexMergerV9();
     } else {
@@ -602,7 +612,8 @@ public class IndexMergerTest
         indexSpec.getBitmapSerdeFactory(),
         "lz4".equals(indexSpec.getDimensionCompression()) ? "lzf" : "lz4",
         "lz4".equals(indexSpec.getMetricCompression()) ? "lzf" : "lz4",
-        "longs".equals(indexSpec.getLongEncoding()) ? "auto" : "longs"
+        "longs".equals(indexSpec.getLongEncoding()) ? "auto" : "longs",
+        "floats"
     );
 
     AggregatorFactory[] mergedAggregators = new AggregatorFactory[]{new CountAggregatorFactory("count")};
@@ -739,7 +750,8 @@ public class IndexMergerTest
         indexSpec.getBitmapSerdeFactory(),
         "lz4".equals(indexSpec.getDimensionCompression()) ? "lzf" : "lz4",
         "lz4".equals(indexSpec.getMetricCompression()) ? "lzf" : "lz4",
-        "longs".equals(indexSpec.getLongEncoding()) ? "auto" : "longs"
+        "longs".equals(indexSpec.getLongEncoding()) ? "auto" : "longs",
+        "floats"
     );
 
     QueryableIndex converted = closer.closeLater(

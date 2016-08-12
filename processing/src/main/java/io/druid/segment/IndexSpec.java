@@ -45,8 +45,9 @@ public class IndexSpec
 {
   public static final String UNCOMPRESSED = "uncompressed";
   public static final String DEFAULT_METRIC_COMPRESSION = CompressedObjectStrategy.DEFAULT_COMPRESSION_STRATEGY.name().toLowerCase();
-  public static final String DEFAULT_LONG_ENCODING = CompressionFactory.DEFAULT_LONG_ENCODING_STRATEGY.name().toLowerCase();
   public static final String DEFAULT_DIMENSION_COMPRESSION = CompressedObjectStrategy.DEFAULT_COMPRESSION_STRATEGY.name().toLowerCase();
+  public static final String DEFAULT_LONG_ENCODING = CompressionFactory.DEFAULT_LONG_ENCODING_STRATEGY.name().toLowerCase();
+  public static final String DEFAULT_FLOAT_ENCODING = CompressionFactory.DEFAULT_FLOAT_ENCODING_STRATEGY.name().toLowerCase();
 
   private static final Set<String> METRIC_COMPRESSION_NAMES = Sets.newHashSet(
       Iterables.transform(
@@ -93,10 +94,26 @@ public class IndexSpec
       )
   );
 
+  private static final Set<String> FLOAT_ENCODING_NAMES = Sets.newHashSet(
+      Iterables.transform(
+          Arrays.asList(CompressionFactory.FloatEncodingStrategy.values()),
+          new Function<CompressionFactory.FloatEncodingStrategy, String>()
+          {
+            @Nullable
+            @Override
+            public String apply(CompressionFactory.FloatEncodingStrategy strategy)
+            {
+              return strategy.name().toLowerCase();
+            }
+          }
+      )
+  );
+
   private final BitmapSerdeFactory bitmapSerdeFactory;
   private final String dimensionCompression;
   private final String metricCompression;
   private final String longEncoding;
+  private final String floatEncoding;
 
 
   /**
@@ -104,7 +121,7 @@ public class IndexSpec
    */
   public IndexSpec()
   {
-    this(null, null, null, null);
+    this(null, null, null, null, null);
   }
 
   /**
@@ -121,15 +138,19 @@ public class IndexSpec
    * @param metricCompression compression format for metric columns, null to use the default.
    *                          Defaults to {@link CompressedObjectStrategy#DEFAULT_COMPRESSION_STRATEGY}
    *
-   * @param longEncoding encoding format for metric and dimension columns with type long, null to use the default.
+   * @param longEncoding encoding strategy for metric and dimension columns with type long, null to use the default.
    *                     Defaults to {@link CompressionFactory#DEFAULT_LONG_ENCODING_STRATEGY}
+   *
+   * @param floatEncoding encoding strategy for metric and dimension columns with type float, null to use the default.
+   *                      Defaults to {@link CompressionFactory#DEFAULT_FLOAT_ENCODING_STRATEGY}
    */
   @JsonCreator
   public IndexSpec(
       @JsonProperty("bitmap") BitmapSerdeFactory bitmapSerdeFactory,
       @JsonProperty("dimensionCompression") String dimensionCompression,
       @JsonProperty("metricCompression") String metricCompression,
-      @JsonProperty("longEncoding") String longEncoding
+      @JsonProperty("longEncoding") String longEncoding,
+      @JsonProperty("floatEncoding") String floatEncoding
   )
   {
     Preconditions.checkArgument(dimensionCompression == null || dimensionCompression.equals(UNCOMPRESSED) ||
@@ -142,10 +163,14 @@ public class IndexSpec
     Preconditions.checkArgument(longEncoding == null || LONG_ENCODING_NAMES.contains(longEncoding),
                                 "Unknown long encoding type[%s]", longEncoding);
 
+    Preconditions.checkArgument(floatEncoding == null || FLOAT_ENCODING_NAMES.contains(floatEncoding),
+                                "Unknown float encoding type[%s]", floatEncoding);
+
     this.bitmapSerdeFactory = bitmapSerdeFactory != null ? bitmapSerdeFactory : new ConciseBitmapSerdeFactory();
     this.dimensionCompression = dimensionCompression;
     this.metricCompression = metricCompression;
     this.longEncoding = longEncoding;
+    this.floatEncoding = floatEncoding;
   }
 
   @JsonProperty("bitmap")
@@ -171,6 +196,12 @@ public class IndexSpec
   {
     return longEncoding;
   }
+  
+  @JsonProperty
+  public String getFloatEncoding()
+  {
+    return floatEncoding;
+  }
 
   public CompressedObjectStrategy.CompressionStrategy getMetricCompressionStrategy()
   {
@@ -191,7 +222,13 @@ public class IndexSpec
     return CompressionFactory.LongEncodingStrategy.valueOf(
         (longEncoding == null ? DEFAULT_LONG_ENCODING : longEncoding).toUpperCase()
     );
+  }
 
+  public CompressionFactory.FloatEncodingStrategy getFloatEncodingStrategy()
+  {
+    return CompressionFactory.FloatEncodingStrategy.valueOf(
+        (floatEncoding == null ? DEFAULT_FLOAT_ENCODING : floatEncoding).toUpperCase()
+    );
   }
 
   private static CompressedObjectStrategy.CompressionStrategy dimensionCompressionStrategyForName(String compression)

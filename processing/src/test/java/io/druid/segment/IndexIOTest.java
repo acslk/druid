@@ -70,7 +70,8 @@ public class IndexIOTest
       new ConciseBitmapSerdeFactory(),
       CompressedObjectStrategy.CompressionStrategy.LZ4,
       CompressedObjectStrategy.CompressionStrategy.LZ4,
-      CompressionFactory.LongEncodingStrategy.LONGS
+      CompressionFactory.LongEncodingStrategy.LONGS,
+      CompressionFactory.FloatEncodingStrategy.FLOATS
   );
 
   private static <T> List<T> filterByBitset(List<T> list, BitSet bitSet)

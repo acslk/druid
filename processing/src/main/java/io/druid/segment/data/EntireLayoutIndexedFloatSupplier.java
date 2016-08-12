@@ -23,25 +23,24 @@ import com.google.common.base.Supplier;
 
 import java.io.IOException;
 
-public class EntireLayoutIndexedLongSupplier implements Supplier<IndexedLongs>
+public class EntireLayoutIndexedFloatSupplier implements Supplier<IndexedFloats>
 {
-
   private final int totalSize;
-  private final CompressionFactory.LongEncodingReader reader;
+  private final CompressionFactory.FloatEncodingReader reader;
 
-  public EntireLayoutIndexedLongSupplier(int totalSize, CompressionFactory.LongEncodingReader reader)
+  public EntireLayoutIndexedFloatSupplier(int totalSize, CompressionFactory.FloatEncodingReader reader)
   {
     this.totalSize = totalSize;
     this.reader = reader;
   }
 
   @Override
-  public IndexedLongs get()
+  public IndexedFloats get()
   {
-    return new EntireLayoutIndexedLongSupplier.EntireLayoutIndexedLongs();
+    return new EntireLayoutIndexedFloats();
   }
 
-  private class EntireLayoutIndexedLongs implements IndexedLongs
+  private class EntireLayoutIndexedFloats implements IndexedFloats
   {
 
     @Override
@@ -51,13 +50,13 @@ public class EntireLayoutIndexedLongSupplier implements Supplier<IndexedLongs>
     }
 
     @Override
-    public long get(int index)
+    public float get(int index)
     {
       return reader.read(index);
     }
 
     @Override
-    public void fill(int index, long[] toFill)
+    public void fill(int index, float[] toFill)
     {
       if (totalSize - index < toFill.length) {
         throw new IndexOutOfBoundsException(
@@ -74,7 +73,7 @@ public class EntireLayoutIndexedLongSupplier implements Supplier<IndexedLongs>
     @Override
     public String toString()
     {
-      return "EntireCompressedIndexedLongs_Anonymous{" +
+      return "EntireCompressedIndexedFloats_Anonymous{" +
              ", totalSize=" + totalSize +
              '}';
     }

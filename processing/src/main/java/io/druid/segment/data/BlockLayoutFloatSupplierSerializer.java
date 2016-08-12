@@ -36,12 +36,11 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 
-public class BlockLayoutLongSupplierSerializer implements LongSupplierSerializer
+public class BlockLayoutFloatSupplierSerializer implements FloatSupplierSerializer
 {
-
   private final IOPeon ioPeon;
   private final int sizePer;
-  private final CompressionFactory.LongEncodingWriter writer;
+  private final CompressionFactory.FloatEncodingWriter writer;
   private final GenericIndexedWriter<ResourceHolder<ByteBuffer>> flattener;
   private final CompressedObjectStrategy.CompressionStrategy compression;
   private final String metaFile;
@@ -51,11 +50,11 @@ public class BlockLayoutLongSupplierSerializer implements LongSupplierSerializer
 
   private ByteBuffer endBuffer = null;
 
-  public BlockLayoutLongSupplierSerializer(
+  public BlockLayoutFloatSupplierSerializer(
       IOPeon ioPeon,
       String filenameBase,
       ByteOrder order,
-      CompressionFactory.LongEncodingWriter writer,
+      CompressionFactory.FloatEncodingWriter writer,
       CompressedObjectStrategy.CompressionStrategy compression
   )
   {
@@ -88,7 +87,7 @@ public class BlockLayoutLongSupplierSerializer implements LongSupplierSerializer
   }
 
   @Override
-  public void add(long value) throws IOException
+  public void add(float value) throws IOException
   {
     if (numInserted % sizePer == 0) {
       if (endBuffer != null) {
@@ -129,7 +128,7 @@ public class BlockLayoutLongSupplierSerializer implements LongSupplierSerializer
     flattener.close();
 
     metaOut = new CountingOutputStream(ioPeon.makeOutputStream(metaFile));
-    metaOut.write(CompressedLongsIndexedSupplier.version);
+    metaOut.write(CompressedFloatsIndexedSupplier.version);
     metaOut.write(Ints.toByteArray(numInserted));
     metaOut.write(Ints.toByteArray(sizePer));
     writer.putMeta(metaOut, compression);
