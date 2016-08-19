@@ -57,6 +57,9 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 public class LongCompressionBenchmark
 {
+  @Param({"compressBenchmarkFiles"})
+  private static String dirPath;
+
   @Param({"enumerate"})
   private static String file;
 
@@ -71,13 +74,11 @@ public class LongCompressionBenchmark
 
   private Random rand;
   private Supplier<IndexedLongs> supplier;
-  private long sum;
 
   @Setup
   public void setup() throws Exception
   {
-    URL url = this.getClass().getClassLoader().getResource("compress");
-    File dir = new File(url.toURI());
+    File dir = new File(dirPath);
     File compFile = new File(dir, file + "-" + strategy.toUpperCase() + "-" + format.toUpperCase());
     rand = new Random();
     ByteBuffer buffer = Files.map(compFile);
@@ -87,13 +88,12 @@ public class LongCompressionBenchmark
   @Benchmark
   public void readContinuous(Blackhole bh) throws IOException
   {
-    BlockLayoutIndexedLongSupplier.BlockLayoutIndexedLongs indexedLongs = (BlockLayoutIndexedLongSupplier.BlockLayoutIndexedLongs)supplier.get();
+    IndexedLongs indexedLongs = supplier.get();
     int count = indexedLongs.size();
-    sum = 0;
+    long sum = 0;
     for (int i = 0; i < count; i++) {
       sum += indexedLongs.get(i);
     }
-    System.out.println(indexedLongs.debugEnter);
     bh.consume(sum);
     indexedLongs.close();
   }
@@ -101,13 +101,12 @@ public class LongCompressionBenchmark
   @Benchmark
   public void readSkipping(Blackhole bh) throws IOException
   {
-    BlockLayoutIndexedLongSupplier.BlockLayoutIndexedLongs indexedLongs = (BlockLayoutIndexedLongSupplier.BlockLayoutIndexedLongs)supplier.get();
+    IndexedLongs indexedLongs = supplier.get();
     int count = indexedLongs.size();
-    sum = 0;
+    long sum = 0;
     for (int i = 0; i < count; i += rand.nextInt(2000)) {
       sum += indexedLongs.get(i);
     }
-    System.out.println(indexedLongs.debugEnter);
     bh.consume(sum);
     indexedLongs.close();
   }

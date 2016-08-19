@@ -53,6 +53,7 @@ import java.util.Map;
 public class LongCompressionBenchmarkFileGenerator
 {
   public static final int ROW_NUM = 5000000;
+  public static String path = "compressBenchmarkFiles/";
   public static final List<CompressedObjectStrategy.CompressionStrategy> compressions =
       ImmutableList.of(CompressedObjectStrategy.CompressionStrategy.LZ4,
                        CompressedObjectStrategy.CompressionStrategy.NONE,
@@ -62,6 +63,10 @@ public class LongCompressionBenchmarkFileGenerator
 
   public static void main(String[] args) throws IOException, URISyntaxException
   {
+    if (args.length >= 1) {
+      path = args[0];
+    }
+
     BenchmarkColumnSchema enumeratedSchema = BenchmarkColumnSchema.makeEnumerated("", ValueType.LONG, true, 1, 0d,
                                                                                   ImmutableList.<Object>of(
                                                                                       0,
@@ -115,9 +120,7 @@ public class LongCompressionBenchmarkFileGenerator
     generators.put("sequential", new BenchmarkColumnValueGenerator(sequentialSchema, 1));
     generators.put("uniform", new BenchmarkColumnValueGenerator(uniformSchema, 1));
 
-    URL url = LongCompressionBenchmarkFileGenerator.class.getClassLoader().getResource("");
-    File base = new File(url.toURI());
-    File dir = new File(base, "compress");
+    File dir = new File(path);
     dir.mkdir();
 
     // create data files using BenchmarkColunValueGenerator
