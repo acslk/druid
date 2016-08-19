@@ -52,7 +52,7 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Benchmark)
 @Fork(value = 1)
 @Warmup(iterations = 10)
-@Measurement(iterations = 10)
+@Measurement(iterations = 25)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 public class LongCompressionBenchmark
@@ -66,11 +66,11 @@ public class LongCompressionBenchmark
   @Param({"longs"})
   private static String format;
 
-  @Param({"lz4"})
+  @Param({"uncompressed"})
   private static String strategy;
 
-//  @Param({"1", "2", "4", "8", "16", "32", "128", "512"})
-//  private static int skip;
+  @Param({"1", "2", "4", "8", "16", "32", "128", "512"})
+  private static int skip;
 
   private Random rand;
   private Supplier<IndexedLongs> supplier;
@@ -91,25 +91,25 @@ public class LongCompressionBenchmark
     IndexedLongs indexedLongs = supplier.get();
     int count = indexedLongs.size();
     long sum = 0;
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < count; i+= skip) {
       sum += indexedLongs.get(i);
     }
     bh.consume(sum);
     indexedLongs.close();
   }
 
-  @Benchmark
-  public void readSkipping(Blackhole bh) throws IOException
-  {
-    IndexedLongs indexedLongs = supplier.get();
-    int count = indexedLongs.size();
-    long sum = 0;
-    for (int i = 0; i < count; i += rand.nextInt(2000)) {
-      sum += indexedLongs.get(i);
-    }
-    bh.consume(sum);
-    indexedLongs.close();
-  }
+//  @Benchmark
+//  public void readSkipping(Blackhole bh) throws IOException
+//  {
+//    IndexedLongs indexedLongs = supplier.get();
+//    int count = indexedLongs.size();
+//    long sum = 0;
+//    for (int i = 0; i < count; i += rand.nextInt(2000)) {
+//      sum += indexedLongs.get(i);
+//    }
+//    bh.consume(sum);
+//    indexedLongs.close();
+//  }
 
 }
 
