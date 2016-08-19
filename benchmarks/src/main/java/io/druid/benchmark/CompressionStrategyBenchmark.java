@@ -19,8 +19,8 @@
 
 package io.druid.benchmark;
 
-import com.google.common.base.Supplier;
 import com.google.common.io.Files;
+import io.druid.collections.ResourceHolder;
 import io.druid.segment.data.BlockLayoutIndexedLongSupplier;
 import io.druid.segment.data.CompressedLongsIndexedSupplier;
 import io.druid.segment.data.IndexedLongs;
@@ -34,83 +34,58 @@ import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-// Run LongCompressionBenchmarkFileGenerator to generate the required files before running this benchmark
-
 @State(Scope.Benchmark)
 @Fork(value = 1)
-@Warmup(iterations = 10)
-@Measurement(iterations = 10)
+@Warmup(iterations = 1)
+@Measurement(iterations = 2)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-public class LongCompressionBenchmark
+public class CompressionStrategyBenchmark
 {
-  @Param({"enumerate"})
+  @Param("/Users/daveli/Documents/druid/benchmarks/target/classes/compress/")
+  private String directory;
+
+  @Param({"enumerate", "zipfLow", "zipfHigh", "sequential", "uniform"})
   private static String file;
 
-  @Param({"longs"})
+  @Param({"AUTO", "LONGS"})
   private static String format;
 
-  @Param({"lz4"})
+  @Param("LZ4")
   private static String strategy;
 
-//  @Param({"1", "2", "4", "8", "16", "32", "128", "512"})
-//  private static int skip;
-
   private Random rand;
-  private Supplier<IndexedLongs> supplier;
-  private long sum;
+  private BlockLayoutIndexedLongSupplier.BlockLayoutIndexedLongs indexedLongs;
 
   @Setup
   public void setup() throws Exception
   {
-    URL url = this.getClass().getClassLoader().getResource("compress");
-    File dir = new File(url.toURI());
-    File compFile = new File(dir, file + "-" + strategy.toUpperCase() + "-" + format.toUpperCase());
-    rand = new Random();
+    File dir = new File(directory);
+    String fileName = file + "-" + strategy + "-" + format;
+    File compFile = new File(dir, fileName);
     ByteBuffer buffer = Files.map(compFile);
-    supplier = CompressedLongsIndexedSupplier.fromByteBuffer(buffer, ByteOrder.nativeOrder());
+    indexedLongs = (BlockLayoutIndexedLongSupplier.BlockLayoutIndexedLongs)CompressedLongsIndexedSupplier.fromByteBuffer(buffer, ByteOrder.nativeOrder()).get();
+    rand = new Random();
   }
 
   @Benchmark
-  public void readContinuous(Blackhole bh) throws IOException
+  public void compressBlocks(Blackhole bh) throws Exception
   {
-    BlockLayoutIndexedLongSupplier.BlockLayoutIndexedLongs indexedLongs = (BlockLayoutIndexedLongSupplier.BlockLayoutIndexedLongs)supplier.get();
-    int count = indexedLongs.size();
-    sum = 0;
-    for (int i = 0; i < count; i++) {
-      sum += indexedLongs.get(i);
+    for (int i = 0; i < indexedLongs.singleThreadedLongBuffers.size(); i++) {
+      ResourceHolder<ByteBuffer> bufferholder = indexedLongs.singleThreadedLongBuffers.get(i);
+      ByteBuffer buffer = bufferholder.get();
+      buffer.get(0);
+      bufferholder.close();
     }
-    System.out.println(indexedLongs.debugEnter);
-    bh.consume(sum);
-    indexedLongs.close();
   }
-
-  @Benchmark
-  public void readSkipping(Blackhole bh) throws IOException
-  {
-    BlockLayoutIndexedLongSupplier.BlockLayoutIndexedLongs indexedLongs = (BlockLayoutIndexedLongSupplier.BlockLayoutIndexedLongs)supplier.get();
-    int count = indexedLongs.size();
-    sum = 0;
-    for (int i = 0; i < count; i += rand.nextInt(2000)) {
-      sum += indexedLongs.get(i);
-    }
-    System.out.println(indexedLongs.debugEnter);
-    bh.consume(sum);
-    indexedLongs.close();
-  }
-
 }
-

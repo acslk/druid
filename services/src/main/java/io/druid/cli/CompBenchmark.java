@@ -17,11 +17,9 @@
  * under the License.
  */
 
-package io.druid.benchmark;
+package io.druid.cli;
 
-import com.google.common.base.Supplier;
 import com.google.common.io.Files;
-import io.druid.segment.data.BlockLayoutIndexedLongSupplier;
 import io.druid.segment.data.CompressedLongsIndexedSupplier;
 import io.druid.segment.data.IndexedLongs;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -39,78 +37,57 @@ import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-// Run LongCompressionBenchmarkFileGenerator to generate the required files before running this benchmark
-
 @State(Scope.Benchmark)
 @Fork(value = 1)
-@Warmup(iterations = 10)
+@Warmup(iterations = 1)
 @Measurement(iterations = 10)
 @BenchmarkMode(Mode.AverageTime)
-@OutputTimeUnit(TimeUnit.MILLISECONDS)
-public class LongCompressionBenchmark
+@OutputTimeUnit(TimeUnit.MICROSECONDS)
+public class CompBenchmark
 {
-  @Param({"enumerate"})
-  private static String file;
+  @Param("/Users/daveli/gitsegment/2016-08-15T15:00:00.000Z_2016-08-15T16:00:00.000Z/2016-08-15T15:00:15.484Z/1/temp/")
+  private String directory;
 
-  @Param({"longs"})
-  private static String format;
-
-  @Param({"lz4"})
-  private static String strategy;
-
-//  @Param({"1", "2", "4", "8", "16", "32", "128", "512"})
-//  private static int skip;
+  @Param("commits-LZ4-AUTO")
+  private String fileName;
 
   private Random rand;
-  private Supplier<IndexedLongs> supplier;
-  private long sum;
+  private IndexedLongs indexedLongs;
 
   @Setup
   public void setup() throws Exception
   {
-    URL url = this.getClass().getClassLoader().getResource("compress");
-    File dir = new File(url.toURI());
-    File compFile = new File(dir, file + "-" + strategy.toUpperCase() + "-" + format.toUpperCase());
-    rand = new Random();
+    File dir = new File(directory);
+    File compFile = new File(dir, fileName);
     ByteBuffer buffer = Files.map(compFile);
-    supplier = CompressedLongsIndexedSupplier.fromByteBuffer(buffer, ByteOrder.nativeOrder());
+    indexedLongs = CompressedLongsIndexedSupplier.fromByteBuffer(buffer, ByteOrder.nativeOrder()).get();
+    rand = new Random();
   }
 
   @Benchmark
-  public void readContinuous(Blackhole bh) throws IOException
+  public void readContinuous(Blackhole bh) throws Exception
   {
-    BlockLayoutIndexedLongSupplier.BlockLayoutIndexedLongs indexedLongs = (BlockLayoutIndexedLongSupplier.BlockLayoutIndexedLongs)supplier.get();
-    int count = indexedLongs.size();
-    sum = 0;
-    for (int i = 0; i < count; i++) {
+    long sum = 0;
+    for (int i = 0; i < indexedLongs.size(); i++) {
       sum += indexedLongs.get(i);
     }
-    System.out.println(indexedLongs.debugEnter);
     bh.consume(sum);
-    indexedLongs.close();
   }
 
   @Benchmark
-  public void readSkipping(Blackhole bh) throws IOException
+  public void readSkipping(Blackhole bh) throws Exception
   {
-    BlockLayoutIndexedLongSupplier.BlockLayoutIndexedLongs indexedLongs = (BlockLayoutIndexedLongSupplier.BlockLayoutIndexedLongs)supplier.get();
-    int count = indexedLongs.size();
-    sum = 0;
-    for (int i = 0; i < count; i += rand.nextInt(2000)) {
+    long sum = 0;
+    for (int i = 0; i < indexedLongs.size(); i += rand.nextInt(1000)) {
       sum += indexedLongs.get(i);
     }
-    System.out.println(indexedLongs.debugEnter);
     bh.consume(sum);
-    indexedLongs.close();
   }
 
 }
-

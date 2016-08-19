@@ -55,7 +55,8 @@ public class LongCompressionBenchmarkFileGenerator
   public static final int ROW_NUM = 5000000;
   public static final List<CompressedObjectStrategy.CompressionStrategy> compressions =
       ImmutableList.of(CompressedObjectStrategy.CompressionStrategy.LZ4,
-                       CompressedObjectStrategy.CompressionStrategy.NONE);
+                       CompressedObjectStrategy.CompressionStrategy.NONE,
+                       CompressedObjectStrategy.CompressionStrategy.UNCOMPRESSED);
   public static final List<CompressionFactory.LongEncodingStrategy> encodings =
       ImmutableList.of(CompressionFactory.LongEncodingStrategy.AUTO, CompressionFactory.LongEncodingStrategy.LONGS);
 

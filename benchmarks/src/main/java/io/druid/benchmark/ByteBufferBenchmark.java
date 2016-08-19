@@ -29,13 +29,10 @@ import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
-import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.infra.Blackhole;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -52,16 +49,10 @@ import java.util.concurrent.TimeUnit;
 @Measurement(iterations = 25)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-public class VSizeSerdeBenchmark
+public class ByteBufferBenchmark
 {
-  @Param({"5000000"})
-  private int values;
-
-  @Param({"1", "2", "4", "8", "12", "16", "20", "24", "32", "40", "48", "56", "64"})
-  private int size;
-
-  private VSizeLongSerde.LongDeserializer mappedDeserializer;
-  private VSizeLongSerde.LongDeserializer directDeserializer;
+  private ByteBuffer mappedBuffer;
+  private ByteBuffer directBuffer;
   private static File dummy;
 
   {
@@ -84,37 +75,18 @@ public class VSizeSerdeBenchmark
   @Setup
   public void setup() throws IOException, URISyntaxException
   {
-    ByteBuffer mappedBuffer = Files.map(dummy);
-    ByteBuffer directBuffer = ByteBuffer.allocateDirect(CompressedPools.BUFFER_SIZE);
-    mappedDeserializer = VSizeLongSerde.getDeserializer(size, mappedBuffer, 10);
-    directDeserializer = VSizeLongSerde.getDeserializer(size, directBuffer, 0);
+    mappedBuffer = Files.map(dummy);
+    directBuffer = ByteBuffer.allocateDirect(CompressedPools.BUFFER_SIZE);
   }
 
   @Benchmark
-  public void readMapped(Blackhole bh)
-  {
-    long sum = 0;
-    for (int i = 0; i < values; i++) {
-      sum += mappedDeserializer.get(i);
+  public void copy() {
+    for (int i = 0; i < 5000000/8192 + 1; i++) {
+      final ByteBuffer copyBuffer = mappedBuffer.duplicate();
+      copyBuffer.limit(copyBuffer.position() + CompressedPools.BUFFER_SIZE);
+      directBuffer.put(copyBuffer).flip();
+      mappedBuffer.position(mappedBuffer.position() + 1);
     }
-    bh.consume(sum);
   }
 
-  @Benchmark
-  public void readDirect(Blackhole bh)
-  {
-    long sum = 0;
-    int blockSize = VSizeLongSerde.getBlockSize(size, CompressedPools.BUFFER_SIZE);
-    int blocks = values / blockSize;
-    int remaining = values % blockSize;
-    for (int i = 0; i < blocks; i++) {
-      for (int j = 0; j < blockSize; j++) {
-        sum += directDeserializer.get(j);
-      }
-    }
-    for (int i = 0; i < remaining; i++) {
-      sum += directDeserializer.get(i);
-    }
-    bh.consume(sum);
-  }
 }

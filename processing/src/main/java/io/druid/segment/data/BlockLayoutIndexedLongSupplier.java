@@ -21,6 +21,7 @@ package io.druid.segment.data;
 
 import com.google.common.base.Supplier;
 import com.google.common.io.Closeables;
+import com.metamx.common.IAE;
 import com.metamx.common.guava.CloseQuietly;
 import io.druid.collections.ResourceHolder;
 
@@ -71,20 +72,16 @@ public class BlockLayoutIndexedLongSupplier implements Supplier<IndexedLongs>
             final int bufferNum = index >> div;
 
             if (bufferNum != currIndex) {
-              loadBuffer(bufferNum);
+              debugEnter++;
+              CloseQuietly.close(holder);
+              holder = singleThreadedLongBuffers.get(bufferNum);
+              buffer = holder.get();
+              currIndex = bufferNum;
+              longBuffer = buffer.asLongBuffer();
             }
 
             final int bufferIndex = index & rem;
             return longBuffer.get(longBuffer.position() + bufferIndex);
-          }
-
-          protected void loadBuffer(int bufferNum)
-          {
-            CloseQuietly.close(holder);
-            holder = singleThreadedLongBuffers.get(bufferNum);
-            buffer = holder.get();
-            longBuffer = buffer.asLongBuffer();
-            currIndex = bufferNum;
           }
         };
       } else {
@@ -97,7 +94,11 @@ public class BlockLayoutIndexedLongSupplier implements Supplier<IndexedLongs>
             final int bufferNum = index >> div;
 
             if (bufferNum != currIndex) {
-              loadBuffer(bufferNum);
+              CloseQuietly.close(holder);
+              holder = singleThreadedLongBuffers.get(bufferNum);
+              buffer = holder.get();
+              currIndex = bufferNum;
+              reader.setBuffer(buffer);
             }
 
             final int bufferIndex = index & rem;
@@ -111,10 +112,11 @@ public class BlockLayoutIndexedLongSupplier implements Supplier<IndexedLongs>
     }
   }
 
-  private class BlockLayoutIndexedLongs implements IndexedLongs
+  public class BlockLayoutIndexedLongs implements IndexedLongs
   {
+    public int debugEnter = 0;
     final CompressionFactory.LongEncodingReader reader = baseReader.duplicate();
-    final Indexed<ResourceHolder<ByteBuffer>> singleThreadedLongBuffers = baseLongBuffers.singleThreaded();
+    public final Indexed<ResourceHolder<ByteBuffer>> singleThreadedLongBuffers = baseLongBuffers.singleThreaded();
     int currIndex = -1;
     ResourceHolder<ByteBuffer> holder;
     ByteBuffer buffer;
@@ -129,14 +131,15 @@ public class BlockLayoutIndexedLongSupplier implements Supplier<IndexedLongs>
     @Override
     public long get(int index)
     {
-      final int bufferNum = index / sizePer;
-      final int bufferIndex = index % sizePer;
-
-      if (bufferNum != currIndex) {
-        loadBuffer(bufferNum);
-      }
-
-      return reader.read(bufferIndex);
+      throw new IAE("Is this ever run?");
+//      final int bufferNum = index / sizePer;
+//      final int bufferIndex = index % sizePer;
+//
+//      if (bufferNum != currIndex) {
+//        loadBuffer(bufferNum);
+//      }
+//
+//      return reader.read(bufferIndex);
     }
 
     @Override
