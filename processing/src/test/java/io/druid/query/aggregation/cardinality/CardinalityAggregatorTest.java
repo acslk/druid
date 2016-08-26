@@ -20,147 +20,23 @@
 package io.druid.query.aggregation.cardinality;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import io.druid.jackson.DefaultObjectMapper;
 import io.druid.query.aggregation.Aggregator;
 import io.druid.query.aggregation.AggregatorFactory;
 import io.druid.query.aggregation.BufferAggregator;
+import io.druid.query.aggregation.TestDimensionSelector;
 import io.druid.segment.DimensionSelector;
-import io.druid.segment.data.IndexedInts;
 import org.junit.Assert;
 import org.junit.Test;
 
-import javax.annotation.Nullable;
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 public class CardinalityAggregatorTest
 {
-  public static class TestDimensionSelector implements DimensionSelector
-  {
-    private final List<Integer[]> column;
-    private final Map<String, Integer> ids;
-    private final Map<Integer, String> lookup;
 
-    private int pos = 0;
-
-    public TestDimensionSelector(Iterable<String[]> values)
-    {
-      this.lookup = Maps.newHashMap();
-      this.ids = Maps.newHashMap();
-
-      int index = 0;
-      for (String[] multiValue : values) {
-        for (String value : multiValue) {
-          if (!ids.containsKey(value)) {
-            ids.put(value, index);
-            lookup.put(index, value);
-            index++;
-          }
-        }
-      }
-
-      this.column = Lists.newArrayList(
-          Iterables.transform(
-              values, new Function<String[], Integer[]>()
-              {
-                @Nullable
-                @Override
-                public Integer[] apply(@Nullable String[] input)
-                {
-                  return Iterators.toArray(
-                      Iterators.transform(
-                          Iterators.forArray(input), new Function<String, Integer>()
-                          {
-                            @Nullable
-                            @Override
-                            public Integer apply(@Nullable String input)
-                            {
-                              return ids.get(input);
-                            }
-                          }
-                      ), Integer.class
-                  );
-                }
-              }
-          )
-      );
-    }
-
-    public void increment()
-    {
-      pos++;
-    }
-
-    public void reset()
-    {
-      pos = 0;
-    }
-
-    @Override
-    public IndexedInts getRow()
-    {
-      final int p = this.pos;
-      return new IndexedInts()
-      {
-        @Override
-        public int size()
-        {
-          return column.get(p).length;
-        }
-
-        @Override
-        public int get(int i)
-        {
-          return column.get(p)[i];
-        }
-
-        @Override
-        public Iterator<Integer> iterator()
-        {
-          return Iterators.forArray(column.get(p));
-        }
-
-        @Override
-        public void fill(int index, int[] toFill)
-        {
-          throw new UnsupportedOperationException("fill not supported");
-        }
-
-        @Override
-        public void close() throws IOException
-        {
-
-        }
-      };
-    }
-
-    @Override
-    public int getValueCardinality()
-    {
-      return 1;
-    }
-
-    @Override
-    public String lookupName(int i)
-    {
-      return lookup.get(i);
-    }
-
-    @Override
-    public int lookupId(String s)
-    {
-      return ids.get(s);
-    }
-  }
 
   /*
     values1: 4 distinct rows
@@ -172,10 +48,10 @@ public class CardinalityAggregatorTest
     combine(values1, values2): 8 distinct rows
     combine(values1, values2): 7 distinct values
    */
-  private static final List<String[]> values1 = dimensionValues(
+  private static final List<String[]> values1 = TestDimensionSelector.dimensionValues(
       "a", "b", "c", "a", "a", null, "b", "b", "b", "b", "a", "a"
   );
-  private static final List<String[]> values2 = dimensionValues(
+  private static final List<String[]> values2 = TestDimensionSelector.dimensionValues(
       "a",
       "b",
       "c",
@@ -189,25 +65,6 @@ public class CardinalityAggregatorTest
       new String[]{"x", "y"},
       new String[]{"x", "y", "a"}
   );
-
-  private static List<String[]> dimensionValues(Object... values)
-  {
-    return Lists.transform(
-        Lists.newArrayList(values), new Function<Object, String[]>()
-        {
-          @Nullable
-          @Override
-          public String[] apply(@Nullable Object input)
-          {
-            if (input instanceof String[]) {
-              return (String[]) input;
-            } else {
-              return new String[]{(String) input};
-            }
-          }
-        }
-    );
-  }
 
   private static void aggregate(List<DimensionSelector> selectorList, Aggregator agg)
   {
@@ -399,7 +256,11 @@ public class CardinalityAggregatorTest
   @Test
   public void testSerde() throws Exception
   {
-    CardinalityAggregatorFactory factory = new CardinalityAggregatorFactory("billy", ImmutableList.of("b", "a", "c"), true);
+    CardinalityAggregatorFactory factory = new CardinalityAggregatorFactory(
+        "billy",
+        ImmutableList.of("b", "a", "c"),
+        true
+    );
     ObjectMapper objectMapper = new DefaultObjectMapper();
     Assert.assertEquals(
         factory,

@@ -28,6 +28,7 @@ import com.google.common.collect.DiscreteDomain;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
+import io.druid.query.aggregation.TestDimensionSelector;
 import io.druid.segment.DimensionSelector;
 
 import java.nio.ByteBuffer;
@@ -74,8 +75,8 @@ public class CardinalityAggregatorBenchmark extends SimpleBenchmark
         .limit(MAX);
 
 
-    final CardinalityAggregatorTest.TestDimensionSelector dim1 =
-        new CardinalityAggregatorTest.TestDimensionSelector(values);
+    final TestDimensionSelector dim1 =
+        new TestDimensionSelector(values);
 
     selectorList = Lists.newArrayList(
         (DimensionSelector) dim1
@@ -107,9 +108,9 @@ public class CardinalityAggregatorBenchmark extends SimpleBenchmark
 
       for (final DimensionSelector selector : selectorList) {
         if (i % (MAX - 1) == 0) {
-          ((CardinalityAggregatorTest.TestDimensionSelector) selector).reset();
+          ((TestDimensionSelector) selector).reset();
         } else {
-          ((CardinalityAggregatorTest.TestDimensionSelector) selector).increment();
+          ((TestDimensionSelector) selector).increment();
         }
       }
     }

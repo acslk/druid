@@ -51,6 +51,7 @@ import io.druid.segment.QueryableIndex;
 import io.druid.segment.QueryableIndexSegment;
 import io.druid.segment.Segment;
 import io.druid.segment.TestIndex;
+import io.druid.segment.TimeTestIndex;
 import io.druid.segment.incremental.IncrementalIndex;
 import io.druid.timeline.TimelineObjectHolder;
 import io.druid.timeline.VersionedIntervalTimeline;
@@ -320,6 +321,16 @@ public class QueryRunnerTestHelper
     };
   }
 
+  public static <T, QueryType extends Query<T>> List<Map<String, QueryRunner<T>>> makeMappedQueryRunners(
+      QueryRunnerFactory<T, QueryType> factory
+  )
+      throws IOException
+  {
+    return ImmutableList.of(
+
+    );
+  }
+
   public static <T, QueryType extends Query<T>> List<QueryRunner<T>> makeQueryRunners(
       QueryRunnerFactory<T, QueryType> factory
   )
@@ -330,6 +341,25 @@ public class QueryRunnerTestHelper
     final QueryableIndex mMappedTestIndex = TestIndex.getMMappedTestIndex();
     final QueryableIndex noRollupMMappedTestIndex = TestIndex.getNoRollupMMappedTestIndex();
     final QueryableIndex mergedRealtimeIndex = TestIndex.mergedRealtimeIndex();
+    return ImmutableList.of(
+        makeQueryRunner(factory, new IncrementalIndexSegment(rtIndex, segmentId)),
+        makeQueryRunner(factory, new IncrementalIndexSegment(noRollupRtIndex, segmentId)),
+        makeQueryRunner(factory, new QueryableIndexSegment(segmentId, mMappedTestIndex)),
+        makeQueryRunner(factory, new QueryableIndexSegment(segmentId, noRollupMMappedTestIndex)),
+        makeQueryRunner(factory, new QueryableIndexSegment(segmentId, mergedRealtimeIndex))
+    );
+  }
+
+  public static <T, QueryType extends Query<T>> List<QueryRunner<T>> makeTimeQueryRunners(
+      QueryRunnerFactory<T, QueryType> factory
+  )
+      throws IOException
+  {
+    final IncrementalIndex rtIndex = TimeTestIndex.getIncrementalTestIndex();
+    final IncrementalIndex noRollupRtIndex = TimeTestIndex.getNoRollupIncrementalTestIndex();
+    final QueryableIndex mMappedTestIndex = TimeTestIndex.getMMappedTestIndex();
+    final QueryableIndex noRollupMMappedTestIndex = TimeTestIndex.getNoRollupMMappedTestIndex();
+    final QueryableIndex mergedRealtimeIndex = TimeTestIndex.getMMappedTestIndex();
     return ImmutableList.of(
         makeQueryRunner(factory, new IncrementalIndexSegment(rtIndex, segmentId)),
         makeQueryRunner(factory, new IncrementalIndexSegment(noRollupRtIndex, segmentId)),

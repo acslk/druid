@@ -84,7 +84,7 @@ public class RegexFilteredDimensionSpecTest
         "[c,g]"
     );
 
-    DimensionSelector selector = spec.decorate(TestDimensionSelector.instance);
+    DimensionSelector selector = spec.decorate(SimpleTestDimensionSelector.instance);
 
     Assert.assertEquals(2, selector.getValueCardinality());
 

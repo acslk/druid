@@ -60,6 +60,7 @@ import io.druid.query.aggregation.JavaScriptAggregatorFactory;
 import io.druid.query.aggregation.first.LongFirstAggregatorFactory;
 import io.druid.query.aggregation.LongSumAggregatorFactory;
 import io.druid.query.aggregation.PostAggregator;
+import io.druid.query.aggregation.first.StringFirstAggregatorFactory;
 import io.druid.query.aggregation.cardinality.CardinalityAggregatorFactory;
 import io.druid.query.aggregation.hyperloglog.HyperUniqueFinalizingPostAggregator;
 import io.druid.query.aggregation.hyperloglog.HyperUniquesAggregatorFactory;
@@ -1501,6 +1502,7 @@ public class GroupByQueryRunnerTest
         .setDimensions(Lists.<DimensionSpec>newArrayList(new DefaultDimensionSpec("market", "market")))
         .setAggregatorSpecs(
             Arrays.asList(
+                new StringFirstAggregatorFactory("str", "quality", null),
                 new LongFirstAggregatorFactory("first", "index"),
                 new LongLastAggregatorFactory("last", "index")
             )
@@ -1509,18 +1511,18 @@ public class GroupByQueryRunnerTest
         .build();
 
     List<Row> expectedResults = Arrays.asList(
-        GroupByQueryRunnerTestHelper.createExpectedRow("2011-01-01", "market", "spot", "first", 100L, "last", 155L),
-        GroupByQueryRunnerTestHelper.createExpectedRow("2011-01-01", "market", "total_market", "first", 1000L, "last", 1127L),
-        GroupByQueryRunnerTestHelper.createExpectedRow("2011-01-01", "market", "upfront", "first", 800L, "last", 943L),
-        GroupByQueryRunnerTestHelper.createExpectedRow("2011-02-01", "market", "spot", "first", 132L, "last", 114L),
-        GroupByQueryRunnerTestHelper.createExpectedRow("2011-02-01", "market", "total_market", "first", 1203L, "last", 1292L),
-        GroupByQueryRunnerTestHelper.createExpectedRow("2011-02-01", "market", "upfront", "first", 1667L, "last", 1101L),
-        GroupByQueryRunnerTestHelper.createExpectedRow("2011-03-01", "market", "spot", "first", 153L, "last", 125L),
-        GroupByQueryRunnerTestHelper.createExpectedRow("2011-03-01", "market", "total_market", "first", 1124L, "last", 1366L),
-        GroupByQueryRunnerTestHelper.createExpectedRow("2011-03-01", "market", "upfront", "first", 1166L, "last", 1063L),
-        GroupByQueryRunnerTestHelper.createExpectedRow("2011-04-01", "market", "spot", "first", 135L, "last", 120L),
-        GroupByQueryRunnerTestHelper.createExpectedRow("2011-04-01", "market", "total_market", "first", 1314L, "last", 1029L),
-        GroupByQueryRunnerTestHelper.createExpectedRow("2011-04-01", "market", "upfront", "first", 1447L, "last", 780L)
+        GroupByQueryRunnerTestHelper.createExpectedRow("2011-01-01", "market", "spot", "str", "automotive", "first", 100L, "last", 155L),
+        GroupByQueryRunnerTestHelper.createExpectedRow("2011-01-01", "market", "total_market", "str", "mezzanine", "first", 1000L, "last", 1127L),
+        GroupByQueryRunnerTestHelper.createExpectedRow("2011-01-01", "market", "upfront", "str", "mezzanine", "first", 800L, "last", 943L),
+        GroupByQueryRunnerTestHelper.createExpectedRow("2011-02-01", "market", "spot", "str", "automotive", "first", 132L, "last", 114L),
+        GroupByQueryRunnerTestHelper.createExpectedRow("2011-02-01", "market", "total_market", "str", "mezzanine", "first", 1203L, "last", 1292L),
+        GroupByQueryRunnerTestHelper.createExpectedRow("2011-02-01", "market", "upfront", "str", "mezzanine", "first", 1667L, "last", 1101L),
+        GroupByQueryRunnerTestHelper.createExpectedRow("2011-03-01", "market", "spot", "str", "automotive", "first", 153L, "last", 125L),
+        GroupByQueryRunnerTestHelper.createExpectedRow("2011-03-01", "market", "total_market", "str", "mezzanine", "first", 1124L, "last", 1366L),
+        GroupByQueryRunnerTestHelper.createExpectedRow("2011-03-01", "market", "upfront", "str", "mezzanine", "first", 1166L, "last", 1063L),
+        GroupByQueryRunnerTestHelper.createExpectedRow("2011-04-01", "market", "spot", "str", "automotive", "first", 135L, "last", 120L),
+        GroupByQueryRunnerTestHelper.createExpectedRow("2011-04-01", "market", "total_market", "str", "mezzanine", "first", 1314L, "last", 1029L),
+        GroupByQueryRunnerTestHelper.createExpectedRow("2011-04-01", "market", "upfront", "str", "mezzanine", "first", 1447L, "last", 780L)
     );
 
     Iterable<Row> results = GroupByQueryRunnerTestHelper.runQuery(factory, runner, query);

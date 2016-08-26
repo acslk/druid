@@ -28,11 +28,11 @@ import io.druid.segment.data.IndexedInts;
  * encoding 0 -> a, 1 -> b, ...
  * row -> [c,e,g]
  */
-class TestDimensionSelector implements DimensionSelector
+class SimpleTestDimensionSelector implements DimensionSelector
 {
-  public final static TestDimensionSelector instance = new TestDimensionSelector();
+  public final static SimpleTestDimensionSelector instance = new SimpleTestDimensionSelector();
 
-  private TestDimensionSelector()
+  private SimpleTestDimensionSelector()
   {
 
   }

@@ -33,6 +33,7 @@ import io.druid.query.aggregation.first.DoubleFirstAggregatorFactory;
 import io.druid.query.aggregation.HistogramAggregatorFactory;
 import io.druid.query.aggregation.JavaScriptAggregatorFactory;
 import io.druid.query.aggregation.first.LongFirstAggregatorFactory;
+import io.druid.query.aggregation.first.StringFirstAggregatorFactory;
 import io.druid.query.aggregation.last.DoubleLastAggregatorFactory;
 import io.druid.query.aggregation.LongMaxAggregatorFactory;
 import io.druid.query.aggregation.LongMinAggregatorFactory;
@@ -81,6 +82,7 @@ public class AggregatorsModule extends SimpleModule
       @JsonSubTypes.Type(name = "filtered", value = FilteredAggregatorFactory.class),
       @JsonSubTypes.Type(name = "longFirst", value = LongFirstAggregatorFactory.class),
       @JsonSubTypes.Type(name = "doubleFirst", value = DoubleFirstAggregatorFactory.class),
+      @JsonSubTypes.Type(name = "stringFirst", value = StringFirstAggregatorFactory.class),
       @JsonSubTypes.Type(name = "longLast", value = LongLastAggregatorFactory.class),
       @JsonSubTypes.Type(name = "doubleLast", value = DoubleLastAggregatorFactory.class)
   })
